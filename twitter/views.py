@@ -1,3 +1,4 @@
+
 from django.shortcuts import render
 from rest_framework.views import APIView
 from twython import Twython
@@ -5,7 +6,7 @@ import json
 import pandas as pd
 from rest_framework.response import Response
 from .utils import twitter_processor
-
+import tweepy
 
 class TwitterAPI(APIView):
 
@@ -18,8 +19,7 @@ class TwitterAPI(APIView):
         key = request.GET.get("keyword", None)
         if key:
             query = {'q': key,
-            'result_type': 'popular',
-            'count': 10,
+            'count': 4,
             'lang': 'en',
             }
             dict_ = {'user': [], 'user_id': [], 'date': [], 'tweet': [], 'favorite_count': []}
@@ -41,3 +41,19 @@ class Analyzer(APIView):
         #data = [{"name": request.data["data"]["user"][i], "tweet": request.data["data"]["text"][i]} for i in range(0, len(request.data["data"]["user"]))]
         response = twitter_processor(request.data)
         return Response(response)
+
+class ReportAndBlock(APIView):
+    def post(self, request):
+        user_data = request.data
+        with open("twitter_credentials.json", "r") as file:
+            creds = json.load(file)
+        twitter = Twython(creds['CONSUMER_KEY'], creds['CONSUMER_SECRET'])
+        oauth = tweepy.OAuthHandler(creds['CONSUMER_KEY'], creds['CONSUMER_SECRET'])
+        oauth.set_access_token(creds['ACCESS_TOKEN'], creds['ACCESS_SECRET'])
+        api = tweepy.API(oauth)
+        name = user_data['name']
+        print("::::::::::", user_data)
+        print(".............", name)
+        api.create_block(screen_name = name)
+
+        return Response(user_data)
